@@ -11,7 +11,7 @@ dist/
 dist-ssr/
 *.local
 
-# Environment variables
+# Environment variables (IMPORTANT: Keep API keys secure)
 .env
 .env.local
 .env.development.local
@@ -37,10 +37,6 @@ Thumbs.db
 .Spotlight-V100
 .Trashes
 ehthumbs.db
-
-# Logs
-logs/
-*.log
 
 # Runtime data
 pids/
@@ -89,10 +85,6 @@ jspm_packages/
 # Nuxt.js build / generate output
 .nuxt
 
-# Gatsby files
-.cache/
-public
-
 # Storybook build outputs
 .out
 .storybook-out
@@ -101,16 +93,11 @@ public
 tmp/
 temp/
 
-# API keys and secrets
-.env.api
-secrets.json
+# Logs
+logs/
+*.log
 
-# Database
-*.db
-*.sqlite
-*.sqlite3
-
-# Backup files
-*.bak
-*.backup
-*.old
+# Lock files (uncomment if you want to ignore them)
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml

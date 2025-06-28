@@ -1,4 +1,4 @@
-const API_KEY = 'AIzaSyD4P8qzfZlrHzAQMWbh3Uy0kI3_MTE-SPs';
+const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 const API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
 
 export interface GeminiResponse {
@@ -22,6 +22,11 @@ export async function sendMessageToGemini(
   message: string, 
   conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }> = []
 ): Promise<string> {
+  // Check if API key is configured
+  if (!API_KEY || API_KEY === 'your_gemini_api_key_here') {
+    throw new Error('🔑 API key not configured. Please add your Gemini API key to the .env file.\n\nGet your API key from: https://ai.google.dev/');
+  }
+
   try {
     // Convert conversation history to Gemini format
     const contents = conversationHistory

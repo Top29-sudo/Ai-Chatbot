@@ -36,14 +36,54 @@ A modern, feature-rich AI chatbot application built with React, TypeScript, and 
 
 3. **Set up environment variables**
    ```bash
-   # Create .env file and add your API key
-   echo "VITE_GEMINI_API_KEY=your_api_key_here" > .env
+   # Copy the example environment file
+   cp .env.example .env
+   
+   # Edit .env and add your actual API key
+   # Get your API key from: https://ai.google.dev/
    ```
 
-4. **Start development server**
+4. **Add your API key to .env**
+   ```env
+   VITE_GEMINI_API_KEY=your_actual_api_key_here
+   ```
+
+5. **Start development server**
    ```bash
    npm run dev
    ```
+
+## 🔑 Environment Variables Setup
+
+### For Local Development
+
+1. **Copy the example file:**
+   ```bash
+   cp .env.example .env
+   ```
+
+2. **Get your Gemini API key:**
+   - Visit [Google AI Studio](https://ai.google.dev/)
+   - Create an account or sign in
+   - Generate a new API key
+
+3. **Add your API key to `.env`:**
+   ```env
+   VITE_GEMINI_API_KEY=your_actual_api_key_here
+   ```
+
+### For Production Deployment
+
+#### GitHub Pages / Netlify / Vercel
+Add environment variables in your hosting platform's dashboard:
+- **Variable Name**: `VITE_GEMINI_API_KEY`
+- **Variable Value**: Your actual API key
+
+#### Security Notes
+- ✅ `.env` files are automatically ignored by git
+- ✅ Never commit API keys to public repositories
+- ✅ Use `.env.example` to show required variables without exposing secrets
+- ✅ The app will show a helpful error if API key is missing
 
 ## 🚀 Available Scripts
 
@@ -101,7 +141,8 @@ npm run release
 
 ### GitHub Pages
 1. Enable GitHub Pages in repository settings
-2. Run deployment script:
+2. Add `VITE_GEMINI_API_KEY` to repository secrets
+3. Run deployment script:
    ```bash
    npm run deploy:github
    ```
@@ -110,19 +151,12 @@ npm run release
 1. Connect your GitHub repository to Netlify
 2. Set build command: `npm run build`
 3. Set publish directory: `dist`
+4. Add environment variable: `VITE_GEMINI_API_KEY`
 
 ### Vercel
 1. Import your GitHub repository to Vercel
-2. Vercel will automatically detect Vite configuration
+2. Add environment variable: `VITE_GEMINI_API_KEY`
 3. Deploy with zero configuration
-
-## 🔑 Environment Variables
-
-Create a `.env` file in the root directory:
-
-```env
-VITE_GEMINI_API_KEY=your_gemini_api_key_here
-```
 
 ## 📁 Project Structure
 
@@ -142,6 +176,8 @@ ai-chatbot/
 │   ├── App.tsx
 │   ├── main.tsx
 │   └── index.css
+├── .env.example             # Environment variables template
+├── .env                     # Your actual environment variables (git-ignored)
 ├── public/                  # Static assets
 ├── dist/                    # Build output
 └── package.json
@@ -158,6 +194,14 @@ ai-chatbot/
 - Adjust system prompts in `src/lib/gemini.ts`
 - Modify temperature and response parameters
 - Customize conversation memory settings
+
+## 🔒 Security Best Practices
+
+- ✅ API keys are stored in environment variables
+- ✅ `.env` files are git-ignored
+- ✅ Example file provided for easy setup
+- ✅ Clear error messages for missing configuration
+- ✅ No hardcoded secrets in source code
 
 ## 🤝 Contributing
 
