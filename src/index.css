@@ -1,0 +1,70 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Hide scrollbar completely by default */
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+*::-webkit-scrollbar {
+  display: none;
+}
+
+/* Show subtle scrollbar only on hover for main content */
+.scrollbar-on-hover {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.scrollbar-on-hover::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-on-hover:hover {
+  scrollbar-width: thin;
+}
+
+.scrollbar-on-hover:hover::-webkit-scrollbar {
+  display: block;
+  width: 4px;
+}
+
+.scrollbar-on-hover:hover::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-on-hover:hover::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.3);
+  border-radius: 2px;
+  transition: background 0.2s ease;
+}
+
+.scrollbar-on-hover:hover::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.5);
+}
+
+/* Dark mode scrollbar */
+.dark .scrollbar-on-hover:hover::-webkit-scrollbar-thumb {
+  background: rgba(75, 85, 99, 0.3);
+}
+
+.dark .scrollbar-on-hover:hover::-webkit-scrollbar-thumb:hover {
+  background: rgba(75, 85, 99, 0.5);
+}
+
+/* Smooth transitions */
+* {
+  transition: scrollbar-width 0.2s ease;
+}
+
+/* Floating animation for bubbles */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-2px); }
+}
+
+.float-animation {
+  animation: float 3s ease-in-out infinite;
+}
