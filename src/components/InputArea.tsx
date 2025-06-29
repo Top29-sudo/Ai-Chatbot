@@ -1,20 +1,22 @@
 import React, { useState, KeyboardEvent, useRef, useEffect } from 'react';
-import { Loader2, Mic, Paperclip, Sparkles, Code, Lightbulb, BarChart3, FileText, Zap, Brain } from 'lucide-react';
+import { Loader2, Mic, Paperclip, Sparkles, Code, Lightbulb, BarChart3, FileText, Zap, Brain, Square } from 'lucide-react';
 
 interface InputAreaProps {
   onSendMessage: (message: string) => void;
   isLoading: boolean;
   darkMode?: boolean;
+  isGenerating?: boolean;
+  onStopGeneration?: () => void;
 }
 
-export default function InputArea({ onSendMessage, isLoading, darkMode = false }: InputAreaProps) {
+export default function InputArea({ onSendMessage, isLoading, darkMode = false, isGenerating = false, onStopGeneration }: InputAreaProps) {
   const [message, setMessage] = useState('');
   const [showQuickPrompts, setShowQuickPrompts] = useState(true);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (message.trim() && !isLoading) {
+    if (message.trim() && !isLoading && !isGenerating) {
       onSendMessage(message.trim());
       setMessage('');
       if (textareaRef.current) {
@@ -70,7 +72,7 @@ export default function InputArea({ onSendMessage, isLoading, darkMode = false }
   ];
 
   const handleQuickPrompt = (prompt: string) => {
-    if (!isLoading) {
+    if (!isLoading && !isGenerating) {
       onSendMessage(prompt);
       setShowQuickPrompts(false);
     }
@@ -116,7 +118,7 @@ export default function InputArea({ onSendMessage, isLoading, darkMode = false }
               <button
                 key={index}
                 onClick={() => handleQuickPrompt(prompt.text)}
-                disabled={isLoading}
+                disabled={isLoading || isGenerating}
                 className={`group relative p-4 text-left rounded-2xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed border backdrop-blur-sm ${
                   darkMode 
                     ? 'bg-gray-800/30 hover:bg-gray-700/40 border-gray-600/50 text-white' 
@@ -158,7 +160,7 @@ export default function InputArea({ onSendMessage, isLoading, darkMode = false }
                   ? 'bg-gray-800/30 border-gray-600/50 text-white placeholder-gray-400 focus:border-purple-500/70 focus:bg-gray-800/50' 
                   : 'bg-white/20 border-gray-300/50 text-gray-900 placeholder-gray-500 focus:border-purple-500/70 focus:bg-white/30'
               } focus:ring-4 focus:ring-purple-500/20`}
-              disabled={isLoading}
+              disabled={isLoading || isGenerating}
               rows={1}
             />
             
@@ -172,6 +174,7 @@ export default function InputArea({ onSendMessage, isLoading, darkMode = false }
                     : 'text-gray-500 hover:text-purple-600 hover:bg-purple-50/50'
                 }`}
                 title="Attach file (Coming soon)"
+                disabled={isGenerating}
               >
                 <Paperclip className="w-4 h-4" />
               </button>
@@ -183,42 +186,59 @@ export default function InputArea({ onSendMessage, isLoading, darkMode = false }
                     : 'text-gray-500 hover:text-purple-600 hover:bg-purple-50/50'
                 }`}
                 title="Voice input (Coming soon)"
+                disabled={isGenerating}
               >
                 <Mic className="w-4 h-4" />
               </button>
             </div>
           </div>
           
-          {/* Modern Triangular Send Button - ROTATED 180 DEGREES */}
+          {/* Send/Stop Button */}
           <div className="flex items-end">
-            <button
-              type="submit"
-              disabled={!message.trim() || isLoading}
-              className={`w-12 h-12 flex items-center justify-center transition-all duration-300 transform hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none rounded-full shadow-lg hover:shadow-xl ${
-                darkMode 
-                  ? 'bg-slate-700 hover:bg-slate-600' 
-                  : 'bg-slate-800 hover:bg-slate-700'
-              }`}
-              style={{ marginBottom: '4px' }}
-            >
-              {isLoading ? (
-                <Loader2 className="w-5 h-5 animate-spin text-white" />
-              ) : (
-                <svg 
-                  width="20" 
-                  height="20" 
-                  viewBox="0 0 24 24" 
-                  fill="none" 
-                  className="text-white ml-0.5"
-                >
-                  <path 
-                    d="M21 12L3 20L11 12L3 4L21 12Z" 
-                    fill="currentColor"
-                    className="drop-shadow-sm"
-                  />
-                </svg>
-              )}
-            </button>
+            {isGenerating ? (
+              <button
+                type="button"
+                onClick={onStopGeneration}
+                className={`w-12 h-12 flex items-center justify-center transition-all duration-300 transform hover:scale-110 rounded-full shadow-lg hover:shadow-xl ${
+                  darkMode 
+                    ? 'bg-red-700 hover:bg-red-600' 
+                    : 'bg-red-600 hover:bg-red-700'
+                } animate-pulse-red`}
+                style={{ marginBottom: '4px' }}
+                title="Stop generation"
+              >
+                <Square className="w-5 h-5 text-white fill-current" />
+              </button>
+            ) : (
+              <button
+                type="submit"
+                disabled={!message.trim() || isLoading}
+                className={`w-12 h-12 flex items-center justify-center transition-all duration-300 transform hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none rounded-full shadow-lg hover:shadow-xl ${
+                  darkMode 
+                    ? 'bg-slate-700 hover:bg-slate-600' 
+                    : 'bg-slate-800 hover:bg-slate-700'
+                }`}
+                style={{ marginBottom: '4px' }}
+              >
+                {isLoading ? (
+                  <Loader2 className="w-5 h-5 animate-spin text-white" />
+                ) : (
+                  <svg 
+                    width="20" 
+                    height="20" 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    className="text-white ml-0.5"
+                  >
+                    <path 
+                      d="M21 12L3 20L11 12L3 4L21 12Z" 
+                      fill="currentColor"
+                      className="drop-shadow-sm"
+                    />
+                  </svg>
+                )}
+              </button>
+            )}
           </div>
         </form>
 

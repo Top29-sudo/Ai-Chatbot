@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { MessageSquare, Trash2, AlertCircle, Settings, Download, Brain, Zap, Users, Clock, TrendingUp, Sparkles, Moon, Sun, Volume2, VolumeX } from 'lucide-react';
+import { MessageSquare, Trash2, AlertCircle, Settings, Download, Brain, Zap, Users, Clock, TrendingUp, Sparkles, Moon, Sun, Volume2, VolumeX, Square } from 'lucide-react';
 import StreamingMessage from './StreamingMessage';
 import TypingIndicator from './TypingIndicator';
 import InputArea from './InputArea';
@@ -34,15 +34,29 @@ export default function ChatInterface() {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [showStats, setShowStats] = useState(false);
   const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [abortController, setAbortController] = useState<AbortController | null>(null);
+  const [streamingContent, setStreamingContent] = useState<string>('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  const scrollToBottom = (behavior: 'smooth' | 'instant' = 'smooth') => {
+    messagesEndRef.current?.scrollIntoView({ behavior });
   };
 
   useEffect(() => {
     scrollToBottom();
   }, [chatState.messages, chatState.isLoading]);
+
+  // Auto-scroll during streaming - faster updates
+  useEffect(() => {
+    if (streamingMessageId) {
+      const interval = setInterval(() => {
+        scrollToBottom('smooth');
+      }, 50);
+      return () => clearInterval(interval);
+    }
+  }, [streamingMessageId]);
 
   // Update chat memory
   useEffect(() => {
@@ -51,6 +65,30 @@ export default function ChatInterface() {
       conversationHistory: chatState.messages.slice(-20) // Keep last 20 messages
     }));
   }, [chatState.messages]);
+
+  const handleStopGeneration = () => {
+    if (abortController) {
+      abortController.abort();
+      setAbortController(null);
+    }
+    
+    // Update the streaming message with current content
+    if (streamingMessageId && streamingContent) {
+      setChatState(prev => ({
+        ...prev,
+        messages: prev.messages.map(msg => 
+          msg.id === streamingMessageId 
+            ? { ...msg, content: streamingContent }
+            : msg
+        ),
+        isLoading: false,
+      }));
+    }
+    
+    setIsGenerating(false);
+    setStreamingMessageId(null);
+    setStreamingContent('');
+  };
 
   const handleSendMessage = async (content: string) => {
     const userMessage: Message = {
@@ -67,12 +105,18 @@ export default function ChatInterface() {
       error: null,
     }));
 
+    setIsGenerating(true);
+
     // Play send sound
     if (soundEnabled) {
       const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIG2m98OScTgwOUarm7blmGgU7k9n1unEiBC13yO/eizEIHWq+8+OWT');
       audio.volume = 0.3;
       audio.play().catch(() => {});
     }
+
+    // Create abort controller for this request
+    const controller = new AbortController();
+    setAbortController(controller);
 
     try {
       // Prepare conversation history for context
@@ -81,7 +125,12 @@ export default function ChatInterface() {
         content: msg.content
       }));
 
-      const response = await sendMessageToGemini(content, conversationHistory);
+      const response = await sendMessageToGemini(content, conversationHistory, controller.signal);
+      
+      // Check if request was aborted
+      if (controller.signal.aborted) {
+        return;
+      }
       
       const assistantMessageId = (Date.now() + 1).toString();
       const assistantMessage: Message = {
@@ -93,16 +142,20 @@ export default function ChatInterface() {
 
       // Set streaming message ID and add message
       setStreamingMessageId(assistantMessageId);
+      setStreamingContent(response);
       setChatState(prev => ({
         ...prev,
         messages: [...prev.messages, assistantMessage],
         isLoading: false,
       }));
 
-      // Clear streaming after a delay (when streaming is complete)
+      // Clear streaming after completion
       setTimeout(() => {
         setStreamingMessageId(null);
-      }, response.length * 20 + 1000); // Adjust based on streaming speed
+        setIsGenerating(false);
+        setAbortController(null);
+        setStreamingContent('');
+      }, response.length * 8 + 500);
 
       // Play receive sound
       if (soundEnabled) {
@@ -111,6 +164,14 @@ export default function ChatInterface() {
         audio.play().catch(() => {});
       }
     } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        // Request was aborted, don't show error
+        return;
+      }
+      
+      setIsGenerating(false);
+      setAbortController(null);
+      setStreamingContent('');
       setChatState(prev => ({
         ...prev,
         isLoading: false,
@@ -120,6 +181,7 @@ export default function ChatInterface() {
   };
 
   const handleClearChat = () => {
+    handleStopGeneration(); // Stop any ongoing generation
     setChatState({
       messages: [
         {
@@ -141,6 +203,7 @@ export default function ChatInterface() {
       }
     });
     setStreamingMessageId(null);
+    setStreamingContent('');
   };
 
   const handleExportChat = () => {
@@ -191,7 +254,7 @@ export default function ChatInterface() {
     : 'bg-white/90 backdrop-blur-md border-gray-200';
 
   return (
-    <div className={`flex flex-col h-screen ${themeClasses} transition-all duration-500`}>
+    <div className={`flex flex-col h-screen ${themeClasses} transition-all duration-500 scrollbar-hidden`}>
       {/* Premium Header */}
       <div className={`${headerClasses} border-b px-6 py-4 shadow-lg`}>
         <div className="flex items-center justify-between">
@@ -215,6 +278,17 @@ export default function ChatInterface() {
           </div>
           
           <div className="flex items-center gap-2">
+            {/* Stop Generation Button */}
+            {isGenerating && (
+              <button
+                onClick={handleStopGeneration}
+                className={`flex items-center gap-2 px-4 py-2 ${darkMode ? 'text-red-200 hover:text-red-100 hover:bg-red-900/50 bg-red-800/50' : 'text-red-700 hover:text-red-900 hover:bg-red-50 bg-red-100'} rounded-xl transition-all duration-200 transform hover:scale-105 animate-pulse-red border ${darkMode ? 'border-red-700' : 'border-red-300'} shadow-lg`}
+              >
+                <Square className="w-4 h-4 fill-current" />
+                <span className="text-sm font-medium">Stop</span>
+              </button>
+            )}
+
             <button
               onClick={() => setShowStats(!showStats)}
               className={`flex items-center gap-2 px-4 py-2 ${darkMode ? 'text-gray-200 hover:text-purple-300 hover:bg-gray-700' : 'text-gray-700 hover:text-purple-700 hover:bg-purple-50'} rounded-xl transition-all duration-200 transform hover:scale-105`}
@@ -264,7 +338,7 @@ export default function ChatInterface() {
 
         {/* Enhanced Stats Panel */}
         {showStats && (
-          <div className={`mt-6 p-6 ${darkMode ? 'bg-gray-800/50' : 'bg-gray-50/80'} rounded-2xl border ${darkMode ? 'border-gray-700' : 'border-gray-200'} backdrop-blur-sm`}>
+          <div className={`mt-6 p-6 ${darkMode ? 'bg-gray-800/50' : 'bg-gray-50/80'} rounded-2xl border ${darkMode ? 'border-gray-700' : 'border-gray-200'} backdrop-blur-sm scrollbar-hidden`}>
             <div className="flex items-center gap-2 mb-4">
               <TrendingUp className="w-5 h-5 text-purple-500" />
               <h3 className={`font-bold text-lg ${darkMode ? 'text-white' : 'text-gray-900'}`}>Conversation Analytics</h3>
@@ -296,7 +370,7 @@ export default function ChatInterface() {
 
         {/* Settings Panel */}
         {showSettings && (
-          <div className={`mt-6 p-6 ${darkMode ? 'bg-gray-800/50' : 'bg-gray-50/80'} rounded-2xl border ${darkMode ? 'border-gray-700' : 'border-gray-200'} backdrop-blur-sm`}>
+          <div className={`mt-6 p-6 ${darkMode ? 'bg-gray-800/50' : 'bg-gray-50/80'} rounded-2xl border ${darkMode ? 'border-gray-700' : 'border-gray-200'} backdrop-blur-sm scrollbar-hidden`}>
             <div className="flex items-center gap-2 mb-4">
               <Settings className="w-5 h-5 text-purple-500" />
               <h3 className={`font-bold text-lg ${darkMode ? 'text-white' : 'text-gray-900'}`}>Advanced Settings</h3>
@@ -352,8 +426,12 @@ export default function ChatInterface() {
         </div>
       )}
 
-      {/* Messages Container - Hidden Scrollbar Like Input Section */}
-      <div className="flex-1 overflow-y-auto px-6 py-6">
+      {/* Messages Container with Auto-scroll - NO SCROLLBARS */}
+      <div 
+        ref={messagesContainerRef}
+        className="flex-1 overflow-y-auto px-6 py-6 scrollbar-hidden"
+        style={{ scrollBehavior: 'smooth' }}
+      >
         <div className="max-w-4xl mx-auto">
           {chatState.messages.map((message) => (
             <StreamingMessage 
@@ -361,6 +439,11 @@ export default function ChatInterface() {
               message={message} 
               darkMode={darkMode} 
               isStreaming={message.id === streamingMessageId}
+              onContentUpdate={(content) => {
+                if (message.id === streamingMessageId) {
+                  setStreamingContent(content);
+                }
+              }}
             />
           ))}
           
@@ -372,7 +455,13 @@ export default function ChatInterface() {
 
       {/* Clean Input Area */}
       <div className="max-w-4xl mx-auto w-full">
-        <InputArea onSendMessage={handleSendMessage} isLoading={chatState.isLoading} darkMode={darkMode} />
+        <InputArea 
+          onSendMessage={handleSendMessage} 
+          isLoading={chatState.isLoading || isGenerating} 
+          darkMode={darkMode} 
+          isGenerating={isGenerating}
+          onStopGeneration={handleStopGeneration}
+        />
       </div>
     </div>
   );

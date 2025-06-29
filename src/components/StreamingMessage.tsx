@@ -6,12 +6,14 @@ interface StreamingMessageProps {
   message: Message;
   darkMode?: boolean;
   isStreaming?: boolean;
+  onContentUpdate?: (content: string) => void;
 }
 
-export default function StreamingMessage({ message, darkMode = false, isStreaming = false }: StreamingMessageProps) {
+export default function StreamingMessage({ message, darkMode = false, isStreaming = false, onContentUpdate }: StreamingMessageProps) {
   const [displayedContent, setDisplayedContent] = useState('');
   const [copied, setCopied] = useState(false);
   const [isComplete, setIsComplete] = useState(!isStreaming);
+  const [streamingIntervalRef, setStreamingIntervalRef] = useState<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (!isStreaming) {
@@ -28,20 +30,45 @@ export default function StreamingMessage({ message, darkMode = false, isStreamin
     
     const streamInterval = setInterval(() => {
       if (currentIndex < content.length) {
-        setDisplayedContent(content.slice(0, currentIndex + 1));
-        currentIndex++;
+        // Stream multiple characters at once for faster animation
+        const charsToAdd = Math.min(3, content.length - currentIndex);
+        const newContent = content.slice(0, currentIndex + charsToAdd);
+        setDisplayedContent(newContent);
+        
+        // Update parent component with current content
+        if (onContentUpdate) {
+          onContentUpdate(newContent);
+        }
+        
+        currentIndex += charsToAdd;
       } else {
         setIsComplete(true);
         clearInterval(streamInterval);
+        setStreamingIntervalRef(null);
       }
-    }, 20); // Adjust speed here (lower = faster)
+    }, 8); // Much faster interval
 
-    return () => clearInterval(streamInterval);
-  }, [message.content, isStreaming]);
+    setStreamingIntervalRef(streamInterval);
+
+    return () => {
+      if (streamInterval) {
+        clearInterval(streamInterval);
+      }
+    };
+  }, [message.content, isStreaming, onContentUpdate]);
+
+  // Cleanup interval when component unmounts or streaming stops
+  useEffect(() => {
+    return () => {
+      if (streamingIntervalRef) {
+        clearInterval(streamingIntervalRef);
+      }
+    };
+  }, [streamingIntervalRef]);
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(message.content);
+      await navigator.clipboard.writeText(isComplete ? message.content : displayedContent);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
@@ -314,7 +341,7 @@ export default function StreamingMessage({ message, darkMode = false, isStreamin
           </div>
           
           {/* Floating Copy button for assistant messages */}
-          {!isUser && isComplete && (
+          {!isUser && (
             <button
               onClick={handleCopy}
               className={`absolute -top-2 -right-2 w-7 h-7 ${darkMode ? 'bg-gray-700 hover:bg-gray-600 border-gray-600' : 'bg-white hover:bg-gray-50 border-gray-300'} rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-md border transform hover:scale-110`}

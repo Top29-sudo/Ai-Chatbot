@@ -2,59 +2,33 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Hide scrollbar completely by default */
+/* Hide ALL scrollbars completely while maintaining scroll functionality */
 * {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
 }
 
 *::-webkit-scrollbar {
-  display: none;
+  display: none; /* WebKit browsers (Chrome, Safari, Edge) */
 }
 
-/* Show subtle scrollbar only on hover for main content */
-.scrollbar-on-hover {
+/* Ensure smooth scrolling behavior */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Enhanced smooth scrolling for all containers */
+.scrollbar-hidden {
   scrollbar-width: none;
   -ms-overflow-style: none;
+  scroll-behavior: smooth;
 }
 
-.scrollbar-on-hover::-webkit-scrollbar {
+.scrollbar-hidden::-webkit-scrollbar {
   display: none;
 }
 
-.scrollbar-on-hover:hover {
-  scrollbar-width: thin;
-}
-
-.scrollbar-on-hover:hover::-webkit-scrollbar {
-  display: block;
-  width: 4px;
-}
-
-.scrollbar-on-hover:hover::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.scrollbar-on-hover:hover::-webkit-scrollbar-thumb {
-  background: rgba(156, 163, 175, 0.3);
-  border-radius: 2px;
-  transition: background 0.2s ease;
-}
-
-.scrollbar-on-hover:hover::-webkit-scrollbar-thumb:hover {
-  background: rgba(156, 163, 175, 0.5);
-}
-
-/* Dark mode scrollbar */
-.dark .scrollbar-on-hover:hover::-webkit-scrollbar-thumb {
-  background: rgba(75, 85, 99, 0.3);
-}
-
-.dark .scrollbar-on-hover:hover::-webkit-scrollbar-thumb:hover {
-  background: rgba(75, 85, 99, 0.5);
-}
-
-/* Smooth transitions */
+/* Smooth transitions and scroll behavior */
 * {
   transition: scrollbar-width 0.2s ease;
 }
@@ -67,4 +41,50 @@
 
 .float-animation {
   animation: float 3s ease-in-out infinite;
+}
+
+/* Pulse animation for stop button */
+@keyframes pulse-red {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.animate-pulse-red {
+  animation: pulse-red 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Ensure body and html have no scrollbars */
+html, body {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+html::-webkit-scrollbar, body::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbars for all overflow containers */
+div[class*="overflow"], 
+.overflow-auto, 
+.overflow-scroll, 
+.overflow-x-auto, 
+.overflow-y-auto, 
+.overflow-x-scroll, 
+.overflow-y-scroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+div[class*="overflow"]::-webkit-scrollbar, 
+.overflow-auto::-webkit-scrollbar, 
+.overflow-scroll::-webkit-scrollbar, 
+.overflow-x-auto::-webkit-scrollbar, 
+.overflow-y-auto::-webkit-scrollbar, 
+.overflow-x-scroll::-webkit-scrollbar, 
+.overflow-y-scroll::-webkit-scrollbar {
+  display: none;
 }

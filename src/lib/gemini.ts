@@ -20,7 +20,8 @@ export interface ChatContext {
 
 export async function sendMessageToGemini(
   message: string, 
-  conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }> = []
+  conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }> = [],
+  signal?: AbortSignal
 ): Promise<string> {
   // Check if API key is configured
   if (!API_KEY || API_KEY === 'your_gemini_api_key_here') {
@@ -118,6 +119,7 @@ Remember: You are demonstrating the future of AI assistance. Be impressive, help
       headers: {
         'Content-Type': 'application/json',
       },
+      signal, // Add abort signal support
       body: JSON.stringify({
         contents: contents,
         systemInstruction: {
